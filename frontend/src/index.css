@@ -1,0 +1,22 @@
+/* Tailwind directives — imports Tailwind's base, components, and utilities */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Structural rules (outside @layer so they beat every Tailwind layer) ── */
+html, body, #root {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #FDF4EC;
+}
+
+/* Global base styles — typography only, no layout */
+@layer base {
+  body {
+    @apply text-charcoal font-sans antialiased;
+  }
+}

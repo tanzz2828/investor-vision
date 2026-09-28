@@ -1,0 +1,17 @@
+# Secrets — never commit these
+.env
+.env.local
+
+# Python virtual environments
+.venv/
+venv/
+
+# Node dependencies & build output
+node_modules/
+dist/
+
+# Python bytecode cache
+__pycache__/
+
+# macOS junk
+.DS_Store
