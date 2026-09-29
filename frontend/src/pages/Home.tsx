@@ -1,20 +1,36 @@
 // ============================================================
 // Home screen — the main dashboard showing the purchase pipeline
 // Route: /home
-// Shows greeting, address, and the 7-stage pipeline
+// Shows greeting (first name from profile), address, and pipeline
 // "Next" link in top-right cycles to /updates
 // "Log out" link in top-left clears auth and returns to Welcome
 // ============================================================
 
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import PhoneFrame from '../components/PhoneFrame';
 import PipelineRow from '../components/ui/PipelineRow';
 import { pipelineStages } from '../data/mockData';
 import { useAuth } from '../contexts/AuthContext';
+import * as api from '../lib/api';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { token, logout } = useAuth();
+  const [greeting, setGreeting] = useState('Welcome back');
+
+  // Fetch profile to get the client's first name
+  useEffect(() => {
+    if (!token) return;
+    api.getProfile(token).then((profile) => {
+      const rawName = profile.fullName.trim();
+      const firstName = rawName ? rawName.split(' ')[0] : '';
+      const displayName = firstName
+        ? firstName.charAt(0).toUpperCase() + firstName.slice(1)
+        : '';
+      setGreeting(displayName ? `Hi ${displayName}!` : 'Welcome back');
+    }).catch(() => {});
+  }, [token]);
 
   return (
     <PhoneFrame>
@@ -33,7 +49,7 @@ export default function Home() {
       </div>
 
       {/* Greeting */}
-      <h1 className="text-2xl font-bold text-charcoal mb-1">Hi Chloe!</h1>
+      <h1 className="text-2xl font-bold text-charcoal mb-1">{greeting}</h1>
 
       {/* Property address */}
       <p className="text-sm text-muted mb-8">

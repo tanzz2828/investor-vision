@@ -43,8 +43,14 @@ export default function SignIn() {
       // Save token + user in context (and localStorage)
       setAuth(data.access_token, data.user);
 
-      // Navigate to details
-      navigate('/details', { replace: true });
+      if (isLogin) {
+        // Fetch profile to decide where to go
+        const profile = await api.getProfile(data.access_token);
+        navigate(profile.status === 'submitted' ? '/home' : '/details', { replace: true });
+      } else {
+        // New user always starts at details
+        navigate('/details', { replace: true });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {

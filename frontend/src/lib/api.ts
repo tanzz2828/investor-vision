@@ -90,3 +90,67 @@ export function login(email: string, password: string) {
 export function getMe(token: string) {
   return authRequest<{ id: string; email: string }>("/auth/me", token);
 }
+
+// ── Profile API ────────────────────────────────────────────────
+
+/** Raw shape returned by the backend (nulls from Postgres) */
+export interface ProfileResponse {
+  full_name: string | null;
+  phone: string | null;
+  contact_time: string | null;
+  budget: string | null;
+  property_type: string | null;
+  preferred_areas: string | null;
+  investment_goal: string | null;
+  status: string;
+}
+
+/** Frontend-friendly shape — nulls converted to "" */
+export interface ProfileData {
+  fullName: string;
+  phone: string;
+  contactTime: string;
+  budget: string;
+  propertyType: string;
+  preferredAreas: string;
+  investmentGoal: string;
+  status: string;
+}
+
+/** Convert backend response to frontend-friendly shape */
+function toProfileData(raw: ProfileResponse): ProfileData {
+  return {
+    fullName: raw.full_name ?? "",
+    phone: raw.phone ?? "",
+    contactTime: raw.contact_time ?? "",
+    budget: raw.budget ?? "",
+    propertyType: raw.property_type ?? "",
+    preferredAreas: raw.preferred_areas ?? "",
+    investmentGoal: raw.investment_goal ?? "",
+    status: raw.status ?? "draft",
+  };
+}
+
+export function getProfile(token: string) {
+  return authRequest<ProfileResponse>("/profile", token).then(toProfileData);
+}
+
+export function saveDetails(
+  token: string,
+  data: { full_name: string; phone: string; contact_time: string },
+) {
+  return authRequest<ProfileResponse>("/profile/details", token, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }).then(toProfileData);
+}
+
+export function saveBrief(
+  token: string,
+  data: { budget: string; property_type: string; preferred_areas: string; investment_goal: string },
+) {
+  return authRequest<ProfileResponse>("/profile/brief", token, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }).then(toProfileData);
+}

@@ -1,24 +1,60 @@
 // ============================================================
 // Your Details screen — collects name, phone, contact time
 // Route: /details
-// Data is saved to localStorage via props from App.tsx
+// Fetches profile on mount, saves via PUT /api/profile/details
 // ============================================================
 
-import type { DetailsData } from '../types';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PhoneFrame from '../components/PhoneFrame';
 import IconButton from '../components/ui/IconButton';
 import FormSection from '../components/ui/FormSection';
+import { useAuth } from '../contexts/AuthContext';
+import * as api from '../lib/api';
 
-interface YourDetailsProps {
-  details: DetailsData;
-  setDetails: (data: DetailsData) => void;
-}
+export default function YourDetails() {
+  const navigate = useNavigate();
+  const { token } = useAuth();
 
-export default function YourDetails({ details, setDetails }: YourDetailsProps) {
-  // Helper to update a single field
-  const update = (field: keyof DetailsData, value: string) => {
-    setDetails({ ...details, [field]: value });
-  };
+  // Form state
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [contactTime, setContactTime] = useState('');
+
+  // UI state
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  // Fetch saved profile on mount
+  useEffect(() => {
+    if (!token) return;
+    api.getProfile(token).then((profile) => {
+      setFullName(profile.fullName);
+      setPhone(profile.phone);
+      setContactTime(profile.contactTime as '' | 'Morning' | 'Afternoon' | 'Evening');
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
+  }, [token]);
+
+  async function handleContinue() {
+    setError('');
+    setSaving(true);
+    try {
+      await api.saveDetails(token!, {
+        full_name: fullName,
+        phone,
+        contact_time: contactTime,
+      });
+      navigate('/brief');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <PhoneFrame>
@@ -36,10 +72,11 @@ export default function YourDetails({ details, setDetails }: YourDetailsProps) {
             <span className="text-sm font-medium text-charcoal mb-1.5 block">Full name</span>
             <input
               type="text"
-              value={details.fullName}
-              onChange={(e) => update('fullName', e.target.value)}
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
               placeholder="e.g. Chloe Anderson"
-              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50"
             />
           </label>
 
@@ -48,10 +85,11 @@ export default function YourDetails({ details, setDetails }: YourDetailsProps) {
             <span className="text-sm font-medium text-charcoal mb-1.5 block">Phone number</span>
             <input
               type="tel"
-              value={details.phone}
-              onChange={(e) => update('phone', e.target.value)}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               placeholder="e.g. 0400 123 456"
-              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50"
             />
           </label>
 
@@ -59,9 +97,10 @@ export default function YourDetails({ details, setDetails }: YourDetailsProps) {
           <label className="block">
             <span className="text-sm font-medium text-charcoal mb-1.5 block">Best contact time</span>
             <select
-              value={details.contactTime}
-              onChange={(e) => update('contactTime', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary appearance-none"
+              value={contactTime}
+              onChange={(e) => setContactTime(e.target.value as '' | 'Morning' | 'Afternoon' | 'Evening')}
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary appearance-none disabled:opacity-50"
             >
               <option value="">Select a time</option>
               <option value="Morning">Morning</option>
@@ -71,8 +110,13 @@ export default function YourDetails({ details, setDetails }: YourDetailsProps) {
           </label>
         </FormSection>
 
+        {/* Error message */}
+        {error && (
+          <p className="text-sm text-red-600 mb-4 px-1">{error}</p>
+        )}
+
         {/* Continue button */}
-        <IconButton label="Continue" to="/brief" />
+        <IconButton label="Continue" onClick={handleContinue} loading={saving} disabled={saving || loading} />
       </div>
     </PhoneFrame>
   );

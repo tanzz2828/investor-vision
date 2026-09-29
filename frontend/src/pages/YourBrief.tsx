@@ -1,24 +1,63 @@
 // ============================================================
 // Your Brief screen — collects investment preferences
 // Route: /brief
-// Data is saved to localStorage via props from App.tsx
+// Fetches profile on mount, saves via PUT /api/profile/brief
 // ============================================================
 
-import type { BriefData } from '../types';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PhoneFrame from '../components/PhoneFrame';
 import IconButton from '../components/ui/IconButton';
 import FormSection from '../components/ui/FormSection';
+import { useAuth } from '../contexts/AuthContext';
+import * as api from '../lib/api';
 
-interface YourBriefProps {
-  brief: BriefData;
-  setBrief: (data: BriefData) => void;
-}
+export default function YourBrief() {
+  const navigate = useNavigate();
+  const { token } = useAuth();
 
-export default function YourBrief({ brief, setBrief }: YourBriefProps) {
-  // Helper to update a single field
-  const update = (field: keyof BriefData, value: string) => {
-    setBrief({ ...brief, [field]: value });
-  };
+  // Form state
+  const [budget, setBudget] = useState('');
+  const [propertyType, setPropertyType] = useState('');
+  const [preferredAreas, setPreferredAreas] = useState('');
+  const [investmentGoal, setInvestmentGoal] = useState('');
+
+  // UI state
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  // Fetch saved profile on mount
+  useEffect(() => {
+    if (!token) return;
+    api.getProfile(token).then((profile) => {
+      setBudget(profile.budget);
+      setPropertyType(profile.propertyType);
+      setPreferredAreas(profile.preferredAreas);
+      setInvestmentGoal(profile.investmentGoal);
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
+  }, [token]);
+
+  async function handleContinue() {
+    setError('');
+    setSaving(true);
+    try {
+      await api.saveBrief(token!, {
+        budget,
+        property_type: propertyType,
+        preferred_areas: preferredAreas,
+        investment_goal: investmentGoal,
+      });
+      navigate('/confirmation');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <PhoneFrame>
@@ -35,9 +74,10 @@ export default function YourBrief({ brief, setBrief }: YourBriefProps) {
           <label className="block mb-4">
             <span className="text-sm font-medium text-charcoal mb-1.5 block">Budget range</span>
             <select
-              value={brief.budget}
-              onChange={(e) => update('budget', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary appearance-none"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary appearance-none disabled:opacity-50"
             >
               <option value="">Select your budget</option>
               <option value="Up to $500k">Up to $500k</option>
@@ -51,9 +91,10 @@ export default function YourBrief({ brief, setBrief }: YourBriefProps) {
           <label className="block mb-4">
             <span className="text-sm font-medium text-charcoal mb-1.5 block">Property type</span>
             <select
-              value={brief.propertyType}
-              onChange={(e) => update('propertyType', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary appearance-none"
+              value={propertyType}
+              onChange={(e) => setPropertyType(e.target.value)}
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary appearance-none disabled:opacity-50"
             >
               <option value="">Select property type</option>
               <option value="House">House</option>
@@ -68,10 +109,11 @@ export default function YourBrief({ brief, setBrief }: YourBriefProps) {
             <span className="text-sm font-medium text-charcoal mb-1.5 block">Preferred areas</span>
             <input
               type="text"
-              value={brief.preferredAreas}
-              onChange={(e) => update('preferredAreas', e.target.value)}
+              value={preferredAreas}
+              onChange={(e) => setPreferredAreas(e.target.value)}
               placeholder="e.g. Warrnambool, Geelong"
-              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary disabled:opacity-50"
             />
           </label>
 
@@ -79,9 +121,10 @@ export default function YourBrief({ brief, setBrief }: YourBriefProps) {
           <label className="block">
             <span className="text-sm font-medium text-charcoal mb-1.5 block">Investment goal</span>
             <select
-              value={brief.investmentGoal}
-              onChange={(e) => update('investmentGoal', e.target.value)}
-              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary appearance-none"
+              value={investmentGoal}
+              onChange={(e) => setInvestmentGoal(e.target.value)}
+              disabled={loading}
+              className="w-full px-4 py-3 rounded-xl border border-border bg-white text-charcoal text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary appearance-none disabled:opacity-50"
             >
               <option value="">Select your goal</option>
               <option value="Capital growth">Capital growth</option>
@@ -91,8 +134,13 @@ export default function YourBrief({ brief, setBrief }: YourBriefProps) {
           </label>
         </FormSection>
 
+        {/* Error message */}
+        {error && (
+          <p className="text-sm text-red-600 mb-4 px-1">{error}</p>
+        )}
+
         {/* Continue button */}
-        <IconButton label="Continue" to="/confirmation" />
+        <IconButton label="Continue" onClick={handleContinue} loading={saving} disabled={saving || loading} />
       </div>
     </PhoneFrame>
   );

@@ -1,25 +1,39 @@
 // ============================================================
 // Confirmation screen — success message after onboarding
 // Route: /confirmation
-// Reads saved form data from localStorage to personalise the greeting
+// Fetches profile from API to personalise the greeting
 // ============================================================
 
+import { useState, useEffect } from 'react';
 import PhoneFrame from '../components/PhoneFrame';
 import Button from '../components/ui/Button';
-import { useLocalStorage } from '../hooks/useLocalStorage';
-import type { FormData } from '../types';
-
-const defaultFormData: FormData = {
-  details: { fullName: '', phone: '', contactTime: '' },
-  brief: { budget: '', propertyType: '', preferredAreas: '', investmentGoal: '' },
-};
+import { useAuth } from '../contexts/AuthContext';
+import * as api from '../lib/api';
+import type { ProfileData } from '../lib/api';
 
 export default function Confirmation() {
-  const [formData] = useLocalStorage<FormData>('investor-vision-form', defaultFormData);
+  const { token } = useAuth();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
 
-  const name = formData.details.fullName.trim();
-  const areas = formData.brief.preferredAreas.trim();
-  const budget = formData.brief.budget.trim();
+  useEffect(() => {
+    if (!token) return;
+    api.getProfile(token).then(setProfile).catch(() => {});
+  }, [token]);
+
+  // Show nothing while loading (brief flash)
+  if (!profile) {
+    return (
+      <PhoneFrame>
+        <div className="flex items-center justify-center min-h-screen">
+          <p className="text-sm text-muted">Loading…</p>
+        </div>
+      </PhoneFrame>
+    );
+  }
+
+  const name = profile.fullName.trim();
+  const areas = profile.preferredAreas.trim();
+  const budget = profile.budget.trim();
 
   // Build personalised heading
   const heading = name
