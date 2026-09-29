@@ -11,6 +11,8 @@ interface ButtonProps {
   to?: string;
   /** Click handler (ignored if `to` is provided) */
   onClick?: () => void;
+  /** HTML button type — use "submit" for forms */
+  type?: 'button' | 'submit' | 'reset';
   /** Visual variant — primary (orange) or secondary (outline) */
   variant?: 'primary' | 'secondary';
   /** Make the button full-width (default: true) */
@@ -23,6 +25,7 @@ export default function Button({
   label,
   to,
   onClick,
+  type = 'button',
   variant = 'primary',
   fullWidth = true,
   disabled = false,
@@ -56,7 +59,7 @@ export default function Button({
 
   // Otherwise, render as a regular button
   return (
-    <button onClick={onClick} className={className} disabled={disabled}>
+    <button type={type} onClick={onClick} className={className} disabled={disabled}>
       {label}
     </button>
   );

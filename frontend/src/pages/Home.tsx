@@ -3,21 +3,30 @@
 // Route: /home
 // Shows greeting, address, and the 7-stage pipeline
 // "Next" link in top-right cycles to /updates
+// "Log out" link in top-left clears auth and returns to Welcome
 // ============================================================
 
 import { useNavigate, Link } from 'react-router-dom';
 import PhoneFrame from '../components/PhoneFrame';
 import PipelineRow from '../components/ui/PipelineRow';
 import { pipelineStages } from '../data/mockData';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Home() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
 
   return (
     <PhoneFrame>
-      {/* Top bar with "Next" link on the right */}
+      {/* Top bar with "Log out" on the left, "Next" on the right */}
       <div className="flex items-center justify-between mb-6">
-        <div />
+        <button
+          type="button"
+          onClick={logout}
+          className="text-sm font-medium text-muted hover:text-charcoal transition-colors"
+        >
+          Log out
+        </button>
         <Link to="/updates" className="text-sm font-medium text-primary hover:opacity-80">
           Next →
         </Link>

@@ -1,11 +1,13 @@
 // ============================================================
 // App.tsx — the root component
-// Sets up React Router routes and holds central form state
+// Sets up React Router routes, auth context, and form state
 // Form data is persisted to localStorage via the useLocalStorage hook
 // ============================================================
 
 import { Routes, Route } from 'react-router-dom';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import type { FormData, DetailsData, BriefData } from './types';
 
 // Pages
@@ -34,7 +36,7 @@ const defaultFormData: FormData = {
   },
 };
 
-function App() {
+function AppRoutes() {
   // Central form state — synced with localStorage automatically
   const [formData, setFormData] = useLocalStorage<FormData>(
     'investor-vision-form',
@@ -52,27 +54,37 @@ function App() {
 
   return (
     <Routes>
-      {/* Onboarding flow */}
+      {/* Public routes */}
       <Route path="/" element={<Welcome />} />
       <Route path="/signin" element={<SignIn />} />
-      <Route
-        path="/details"
-        element={
-          <YourDetails details={formData.details} setDetails={setDetails} />
-        }
-      />
-      <Route
-        path="/brief"
-        element={<YourBrief brief={formData.brief} setBrief={setBrief} />}
-      />
-      <Route path="/confirmation" element={<Confirmation />} />
 
-      {/* Main app screens */}
-      <Route path="/home" element={<Home />} />
-      <Route path="/stage" element={<StageDetail />} />
-      <Route path="/updates" element={<Updates />} />
-      <Route path="/property" element={<Property />} />
+      {/* Protected routes — redirect to /signin if no token */}
+      <Route element={<ProtectedRoute />}>
+        <Route
+          path="/details"
+          element={
+            <YourDetails details={formData.details} setDetails={setDetails} />
+          }
+        />
+        <Route
+          path="/brief"
+          element={<YourBrief brief={formData.brief} setBrief={setBrief} />}
+        />
+        <Route path="/confirmation" element={<Confirmation />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/stage" element={<StageDetail />} />
+        <Route path="/updates" element={<Updates />} />
+        <Route path="/property" element={<Property />} />
+      </Route>
     </Routes>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }
 
